@@ -3,8 +3,8 @@ import java.time.temporal.ChronoUnit
 
 package object fincalc {
 
-  def maturities(n: Int, start: LocalDate, monthsToAdd: Int = 1): List[LocalDate] = {
-    (0 to n).map(i => start.plusMonths(i * monthsToAdd)).toList
+  def maturities(nofPeriods: Int, start: LocalDate, monthsToAdd: Int = 1): List[LocalDate] = {
+    (0 to nofPeriods).map(i => start.plusMonths(i * monthsToAdd)).toList
   }
 
   // TODO - refactor

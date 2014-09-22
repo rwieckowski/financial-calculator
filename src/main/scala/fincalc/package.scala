@@ -1,17 +1,21 @@
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
+import fincalc.Money
+
 package object fincalc {
 
   def maturities(nofPeriods: Int, start: LocalDate, monthsToAdd: Int = 1): List[LocalDate] = {
     (0 to nofPeriods).map(i => start.plusMonths(i * monthsToAdd)).toList
   }
 
-  // TODO - refactor
+  type Interest = (Money, Int) => Money
+
+  def interest(rate: Double)(capital: Money, days: Int): Money =
+    capital * rate * days / 365.0
 
   type Amount = Double
   type Percent = Double
-  type InterestCalc = (Amount, LocalDate, LocalDate) => Amount
 
   implicit class AmountOps(a: Amount) {
     def $ = (a * 100.0).round / 100.0
@@ -23,15 +27,6 @@ package object fincalc {
 
   implicit class StringOps(s: String) {
     def toDate = LocalDate.parse(s)
-  }
-
-  type Interest = (Amount, LocalDate, LocalDate) => Amount
-
-  private def interest(rate: Percent)(capital: Amount, start: LocalDate, end: LocalDate): Amount =
-      (rate * capital * ChronoUnit.DAYS.between(start, end) / 365.0).$
-
-  object Interest {
-    def apply(rate: Percent): Interest = interest(rate)
   }
 
 
@@ -69,7 +64,9 @@ package object fincalc {
   case class Installment(date: LocalDate, amount: Amount, capital: Amount, interest: Amount, remainingCapital: Amount)
 
   def installment(interest: Interest, amount: Amount, capital: Amount, start: LocalDate, end: LocalDate): Installment = {
-    val i = interest(capital, start, end).min(amount)
+    def daysBetween(start: LocalDate, end: LocalDate) = ChronoUnit.DAYS.between(start, end).toInt
+
+    val i = interest(Money(capital), daysBetween(start, end)).value.min(amount)
     val rc = capital + i - amount
     Installment(date = end, amount = amount, capital = capital, interest = i.$, remainingCapital = rc.$)
   }

@@ -8,8 +8,7 @@ object Main extends App {
   val start = LocalDate.now()
   val dates = maturities(duration, start)
   val rate = 10.0
-  val interest = Interest(rate percent)
-  val factory = Installment.factory(interest)
+  val factory = Installment.factory(interest(rate percent))
 
   val amounts = Amounts.custom(Map(2 -> 750.00, 4 -> 750.00, 6 -> 750.00), Amounts.equal(duration))
 

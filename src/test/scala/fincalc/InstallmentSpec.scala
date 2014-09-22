@@ -5,7 +5,7 @@ import java.time.LocalDate
 class InstallmentSpec extends UnitSpec {
 
   val interest = 750.00
-  val calc = (a: Amount, start: LocalDate, end: LocalDate) => interest
+  val calc = (m: Money, d: Int) => Money(interest)
   val capital = 10000.00
   val start = LocalDate.of(2014, 1, 1)
   val end = LocalDate.of(2014, 2, 1)

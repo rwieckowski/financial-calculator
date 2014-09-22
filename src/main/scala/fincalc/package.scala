@@ -3,6 +3,12 @@ import java.time.temporal.ChronoUnit
 
 package object fincalc {
 
+  def maturities(n: Int, start: LocalDate, monthsToAdd: Int = 1): List[LocalDate] = {
+    (0 to n).map(i => start.plusMonths(i * monthsToAdd)).toList
+  }
+
+  // TODO - refactor
+
   type Amount = Double
   type Percent = Double
   type InterestCalc = (Amount, LocalDate, LocalDate) => Amount
@@ -19,7 +25,6 @@ package object fincalc {
     def toDate = LocalDate.parse(s)
   }
 
-
   type Interest = (Amount, LocalDate, LocalDate) => Amount
 
   private def interest(rate: Percent)(capital: Amount, start: LocalDate, end: LocalDate): Amount =
@@ -27,12 +32,6 @@ package object fincalc {
 
   object Interest {
     def apply(rate: Percent): Interest = interest(rate)
-  }
-
-
-  def periods(nofPeriods: Int, start: LocalDate, monthsToAdd: Int = 1): List[LocalDate] = {
-    if (nofPeriods < 1 || monthsToAdd < 1) List(start)
-    else start :: periods(nofPeriods - 1, start.plusMonths(monthsToAdd), monthsToAdd)
   }
 
 
@@ -102,22 +101,20 @@ package object fincalc {
     def sameSign(x: T, y: T) = numeric.signum(x) == numeric.signum(y)
     def midpoint(x: T, y: T) = numeric.div(numeric.plus(x, y), numeric.fromInt(2))
     def inTolerance(x: T, y: T) = numeric.lteq(numeric.minus(y, x), tol)
+    def loop(a: T, b: T, fa: T, fb: T): T = {
+      val m = midpoint(a, b)
+      if (inTolerance(a, b)) m
+      else {
+        val fm = f(m)
+        if (sameSign(fm, fb)) loop(a, m, fa, fm)
+        else loop(m, b, fm, fb)
+      }
+    }
 
     val fa = f(a)
     val fb = f(b)
     if (sameSign(fa, fb)) None
-    else {
-      def loop(a: T, b: T, fa: T, fb: T): T = {
-        val m = midpoint(a, b)
-        if (inTolerance(a, b)) m
-        else {
-          val fm = f(m)
-          if (sameSign(fm, fb)) loop(a, m, fa, fm)
-          else loop(m, b, fm, fb)
-        }
-      }
-      Some(loop(a, b, fa, fb))
-    }
+    else Some(loop(a, b, fa, fb))
   }
 
   def findAmount(installment: InstalmentFactory, dates: List[LocalDate], amounts: AmountFactory, capital: Amount) = {
@@ -125,4 +122,12 @@ package object fincalc {
       a => schedule(installment, dates, amounts(a), capital).last.remainingCapital
     }
   }
+
+  def remainingCapital(is: List[Installment]) = is.last.remainingCapital
+
+  /*def find(capital: Amount, dates: List[LocalDate]): Amount = {
+    bisect[Amount](0.00, capital, 0.01) {
+      a => remainingCapital(schedule(installment, dates, amounts, capital))
+    }
+  }*/
 }

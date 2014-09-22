@@ -4,14 +4,14 @@ object Main extends App {
   import fincalc._
 
   val capital = 30000
-  val months = 36
+  val duration = 36
   val start = LocalDate.now()
-  val dates = periods(months, start)
+  val dates = maturities(duration, start)
   val rate = 10.0
   val interest = Interest(rate percent)
   val factory = Installment.factory(interest)
 
-  val amounts = Amounts.custom(Map(2 -> 750.00, 4 -> 750.00, 6 -> 750.00), Amounts.equal(months))
+  val amounts = Amounts.custom(Map(2 -> 750.00, 4 -> 750.00, 6 -> 750.00), Amounts.equal(duration))
 
   def benchmark() = {
     val start = System.currentTimeMillis()
@@ -25,7 +25,7 @@ object Main extends App {
   val amount = findAmount(factory, dates, amounts, capital).get.$
   println(s"capital.: $capital")
   println(s"start...: $start")
-  println(s"months..: $months")
+  println(s"months..: $duration")
   println(s"amount..: $amount")
   println(s"interest: $rate%")
 

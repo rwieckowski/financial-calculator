@@ -1,7 +1,4 @@
 import java.time.LocalDate
-import java.time.temporal.ChronoUnit
-
-import fincalc.Money
 
 package object fincalc {
 
@@ -16,52 +13,13 @@ package object fincalc {
 
   type Amounts = Money => List[Money]
 
-  type Amount = Double
-  type Percent = Double
-
-  implicit class AmountOps(a: Amount) {
-    def $ = (a * 100.0).round / 100.0
-  }
-
-  implicit class PercentOps(p: Percent) {
-    def percent = (p * 100.0).round / 10000.0
-  }
-
-  implicit class StringOps(s: String) {
-    def toDate = LocalDate.parse(s)
-  }
-
-
-  case class Installment(date: LocalDate, amount: Amount, capital: Amount, interest: Amount, remainingCapital: Amount)
-
-  def installment(interest: Interest, amount: Amount, capital: Amount, start: LocalDate, end: LocalDate): Installment = {
-    def daysBetween(start: LocalDate, end: LocalDate) = ChronoUnit.DAYS.between(start, end).toInt
-
-    val i = interest(Money(capital), daysBetween(start, end)).value.min(amount)
-    val rc = capital + i - amount
-    Installment(date = end, amount = amount, capital = capital, interest = i.$, remainingCapital = rc.$)
-  }
-
-  type InstalmentFactory = (Amount, Amount, LocalDate, LocalDate) => Installment
-
-  object Installment {
-    def factory(i: Interest): InstalmentFactory = installment(i, _, _, _, _)
-  }
-
-
-  def schedule(installment: InstalmentFactory, dates: List[LocalDate], amounts: List[Amount], capital: Amount): List[Installment] = {
-    dates match {
-      case start :: end :: rest => {
-        val i = installment(amounts.head, capital, start, end)
-        i :: schedule(installment, end :: rest, amounts.tail, i.remainingCapital)
+  def schedule(interest: Interest, dates: List[LocalDate], amounts: List[Money], capital: Money): List[Installment] = {
+    amounts match {
+      case a :: as => {
+        val i = Installment(interest, dates(0), dates(1), a, capital)
+        i :: schedule(interest, dates.tail, as, i.remainingCapital)
       }
       case _ => Nil
-    }
-  }
-
-  object Schedule {
-    def apply(interest: Interest, capital: Amount, dates: List[LocalDate], amounts: List[Amount]): List[Installment] = {
-      null
     }
   }
 
@@ -85,17 +43,13 @@ package object fincalc {
     else Some(loop(a, b, fa, fb))
   }
 
-  def findAmount(installment: InstalmentFactory, dates: List[LocalDate], amounts: Amounts, capital: Amount) = {
-    bisect[Amount](0.00, capital, 0.01) {
-      a => schedule(installment, dates, amounts(Money(a)).map(_.value), capital).last.remainingCapital
-    }
+  def findAmount(interest: Interest, amounts: Amounts, start: LocalDate, capital: Money): Option[Money] = {
+    val nofPeriods = amounts(Money(0.0)).size
+    val dates = maturities(nofPeriods, start)
+    bisect[Double](0.00, capital.value, 0.01) {
+      a => remainingCapital(schedule(interest, dates, amounts(Money(a)), capital)).value
+    } map(Money(_))
   }
 
-  def remainingCapital(is: List[Installment]) = is.last.remainingCapital
-
-  /*def find(capital: Amount, dates: List[LocalDate]): Amount = {
-    bisect[Amount](0.00, capital, 0.01) {
-      a => remainingCapital(schedule(installment, dates, amounts, capital))
-    }
-  }*/
+  def remainingCapital(is: List[Installment]): Money = is.last.remainingCapital
 }

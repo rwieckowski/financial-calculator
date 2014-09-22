@@ -1,39 +1,33 @@
 package fincalc
 
-import java.time.LocalDate
-
 class InstallmentSpec extends UnitSpec {
 
-  val interest = 750.00
-  val calc = (m: Money, d: Int) => Money(interest)
-  val capital = 10000.00
-  val start = LocalDate.of(2014, 1, 1)
-  val end = LocalDate.of(2014, 2, 1)
-  val amount = 2000.00
-
-  val installment = Installment.factory(calc)
+  def testInstallment(interest: Double = 0.0, amount: Double = 0.0, capital: Double = 0.0,
+                      start: String = "1900-01-01", end: String = "1900-01-01") = {
+    Installment((m: Money, d: Int) => Money(interest), date(start), date(end), Money(amount), Money(capital))
+  }
 
   "installment" should "set date" in {
-    installment(amount, capital, start, end).date should equal(end)
+    testInstallment(end = "2014-01-01").date should equal(date("2014-01-01"))
   }
 
   it should "set amount" in {
-    installment(amount, capital, start, end).amount should equal(amount)
+    testInstallment(amount = 1000.00).amount.value should equal(1000.00)
   }
 
   it should "set capital" in {
-    installment(amount, capital, start, end).capital should equal(capital)
+    testInstallment(capital = 10000.00).capital.value should equal(10000.00)
   }
 
   it should "calculate interest" in {
-    installment(amount, capital, start, end).interest should equal(interest)
+    testInstallment(interest = 750.00, amount = 2000.00).interest.value should equal(750.00)
   }
 
   it should "calculate interest when it exceeds amount" in {
-    installment(500.00, capital, start, end).interest should equal(500.00)
+    testInstallment(interest = 750.00, amount = 500.00).interest.value should equal(500.00)
   }
 
   it should "calculate remaining capital" in {
-    installment(amount, capital, start, end).remainingCapital should equal(8750.00)
+    testInstallment(interest = 750.00, amount = 2000.00, capital = 10000.00).remainingCapital.value should equal(8750.00)
   }
 }

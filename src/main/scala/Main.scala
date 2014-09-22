@@ -3,37 +3,39 @@ import java.time.LocalDate
 object Main extends App {
   import fincalc._
 
-  val capital = 30000
-  val duration = 36
+  val capital = Money(30000)
+  val periods = 36
   val start = LocalDate.now()
-  val dates = maturities(duration, start)
-  val rate = 10.0
-  val factory = Installment.factory(interest(rate percent))
+  val dates = maturities(periods, start)
+  val rate = 0.1
+  val intrst = interest(rate)_
 
   private val customs = Map(2 -> Money(750.00), 4 -> Money(750.00), 6 -> Money(750.00))
-  val amounts = Amounts.custom(customs)_ compose Amounts.equal(duration)
+  val amounts = Amounts.custom(customs)_ compose Amounts.equal(periods)
 
   def benchmark() = {
-    val start = System.currentTimeMillis()
+    val s = System.currentTimeMillis()
     val n = 100000
-    (1 to n).par.foreach(i => findAmount(factory, dates, amounts, capital))
-    val end = System.currentTimeMillis()
-    val duration = (end - start) / 1000.0
-   "%d searches in %.3f sec -> %.4f per sec".format(n, duration, n / duration)
+    (1 to n).par.foreach(i => findAmount(intrst, amounts, start, capital))
+    val e = System.currentTimeMillis()
+    val d = (e - s) / 1000.0
+    "%d searches in %.3f sec -> %.4f per sec".format(n, d, n / d)
   }
 
-  val amount = findAmount(factory, dates, amounts, capital).get.$
+  val amount = findAmount(intrst, amounts, start, capital)
   println(s"capital.: $capital")
   println(s"start...: $start")
-  println(s"months..: $duration")
+  println(s"months..: $periods")
   println(s"amount..: $amount")
-  println(s"interest: $rate%")
+  println("interest: " + rate * 100.0 + "%")
 
-  def fmt(i: Installment) = {
-    "%s:\tamount: %7.2f\tcapital: %7.2f\tinterest: %7.2f\tremaining: %7.2f"
-      .format(i.date, i.amount, i.capital, i.interest, i.remainingCapital)
+  def fmt(inst: Installment): String = inst match {
+    case Installment(d, a, c, i, rc) =>
+      "%s:   amount: %9s   capital: %9s   interest: %9s   remaining: %9s".format(d, a, c, i, rc)
   }
-  schedule(factory, dates, amounts(Money(amount)).map(_.value), capital).map(fmt).foreach(println)
+  amount
+    .map(a => schedule(intrst, dates, amounts(a), capital).map(fmt).mkString("\n"))
+    .foreach(println)
 
-  println(benchmark())
+  //println(benchmark())
 }

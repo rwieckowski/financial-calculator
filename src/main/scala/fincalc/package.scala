@@ -14,6 +14,8 @@ package object fincalc {
   def interest(rate: Double)(capital: Money, days: Int): Money =
     capital * rate * days / 365.0
 
+  type Amounts = Money => List[Money]
+
   type Amount = Double
   type Percent = Double
 
@@ -29,37 +31,6 @@ package object fincalc {
     def toDate = LocalDate.parse(s)
   }
 
-
-  type AmountFactory = Amount => List[Amount]
-
-  def equalAmounts(nofAmounts: Int, amount: Amount): List[Amount] = {
-    List.fill(nofAmounts)(amount)
-  }
-
-  def weightedAmounts(weights: List[Double], amount: Amount): List[Amount] = {
-    weights.map { amount * _ }
-  }
-
-  def customAmounts(custom: Map[Int, Amount], amounts: List[Amount]): List[Amount] = {
-    amounts.zipWithIndex.map { case (a, i) => custom.getOrElse(i, a) }
-  }
-
-  object Amounts {
-    def equal(nofAmounts: Int): AmountFactory = {
-      equalAmounts(nofAmounts, _)
-    }
-
-    def weighted(weights: List[Double]): AmountFactory = {
-        weightedAmounts(weights, _)
-    }
-
-    def custom(custom: Map[Int, Amount], amounts: AmountFactory): AmountFactory = {
-      if (custom.isEmpty)
-        amounts
-      else
-        (a: Amount) => customAmounts(custom, amounts(a))
-    }
-  }
 
   case class Installment(date: LocalDate, amount: Amount, capital: Amount, interest: Amount, remainingCapital: Amount)
 
@@ -114,9 +85,9 @@ package object fincalc {
     else Some(loop(a, b, fa, fb))
   }
 
-  def findAmount(installment: InstalmentFactory, dates: List[LocalDate], amounts: AmountFactory, capital: Amount) = {
+  def findAmount(installment: InstalmentFactory, dates: List[LocalDate], amounts: Amounts, capital: Amount) = {
     bisect[Amount](0.00, capital, 0.01) {
-      a => schedule(installment, dates, amounts(a), capital).last.remainingCapital
+      a => schedule(installment, dates, amounts(Money(a)).map(_.value), capital).last.remainingCapital
     }
   }
 

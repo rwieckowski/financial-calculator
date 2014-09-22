@@ -10,7 +10,8 @@ object Main extends App {
   val rate = 10.0
   val factory = Installment.factory(interest(rate percent))
 
-  val amounts = Amounts.custom(Map(2 -> 750.00, 4 -> 750.00, 6 -> 750.00), Amounts.equal(duration))
+  private val customs = Map(2 -> Money(750.00), 4 -> Money(750.00), 6 -> Money(750.00))
+  val amounts = Amounts.custom(customs)_ compose Amounts.equal(duration)
 
   def benchmark() = {
     val start = System.currentTimeMillis()
@@ -32,7 +33,7 @@ object Main extends App {
     "%s:\tamount: %7.2f\tcapital: %7.2f\tinterest: %7.2f\tremaining: %7.2f"
       .format(i.date, i.amount, i.capital, i.interest, i.remainingCapital)
   }
-  schedule(factory, dates, amounts(amount), capital).map(fmt).foreach(println)
+  schedule(factory, dates, amounts(Money(amount)).map(_.value), capital).map(fmt).foreach(println)
 
   println(benchmark())
 }

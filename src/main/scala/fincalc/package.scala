@@ -1,7 +1,8 @@
 import java.time.LocalDate
 
-package object fincalc {
+import scala.annotation.tailrec
 
+package object fincalc {
   def maturities(nofPeriods: Int, start: LocalDate, monthsToAdd: Int = 1): List[LocalDate] = {
     (0 to nofPeriods).map(i => start.plusMonths(i * monthsToAdd)).toList
   }
@@ -14,13 +15,18 @@ package object fincalc {
   type Amounts = Money => List[Money]
 
   def schedule(interest: Interest, dates: List[LocalDate], amounts: List[Money], capital: Money): List[Installment] = {
-    amounts match {
-      case a :: as => {
-        val i = Installment(interest, dates(0), dates(1), a, capital)
-        i :: schedule(interest, dates.tail, as, i.remainingCapital)
+    @tailrec
+    def loop(payments: List[(LocalDate, LocalDate, Money)],
+             capital: Money, is: List[Installment]): List[Installment] = payments match {
+      case (start, end, amount) :: ps => {
+        val i = Installment(interest, start, end, amount, capital)
+        loop(ps, i.remainingCapital, i :: is)
       }
-      case _ => Nil
+      case Nil => is
     }
+
+    val payments = (dates, dates.tail, amounts).zipped.toList
+    loop(payments, capital, Nil).reverse
   }
 
   def bisect[T](a: T, b: T, tol: T)(f: T => T)(implicit numeric: Fractional[T]): Option[T] = {
@@ -48,7 +54,7 @@ package object fincalc {
     val dates = maturities(nofPeriods, start)
     bisect[Double](0.00, capital.value, 0.01) {
       a => remainingCapital(schedule(interest, dates, amounts(Money(a)), capital)).value
-    } map(Money(_))
+    } map Money.apply
   }
 
   def remainingCapital(is: List[Installment]): Money = is.last.remainingCapital

@@ -10,7 +10,7 @@ object Main extends App {
 
   val customs = Map(2 -> Money(750.00), 4 -> Money(750.00), 6 -> Money(750.00))
 
-  val p: Payments = Payments.equal(periods) //_ andThen Payments.custom(customs)
+  val p: Payments = Payments.equal(periods) _ andThen Payments.custom(customs)
   val sch = findSchedule(capital, rate, start, p)
 
   println(s"capital.: $capital")

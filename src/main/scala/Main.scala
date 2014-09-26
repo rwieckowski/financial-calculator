@@ -6,36 +6,34 @@ object Main extends App {
   val capital = Money(30000)
   val periods = 36
   val start = LocalDate.now()
-  val dates = maturities(periods, start)
   val rate = 0.1
-  val intrst = interest(rate)_
 
-  private val customs = Map(2 -> Money(750.00), 4 -> Money(750.00), 6 -> Money(750.00))
-  val amounts = Amounts.custom(customs)_ compose Amounts.equal(periods)
+  val customs = Map(2 -> Money(750.00), 4 -> Money(750.00), 6 -> Money(750.00))
 
-  def benchmark() = {
-    val s = System.currentTimeMillis()
-    val n = 100000
-    (1 to n).par.foreach(i => findAmount(intrst, amounts, start, capital))
-    val e = System.currentTimeMillis()
-    val d = (e - s) / 1000.0
-    "%d searches in %.3f sec -> %.4f per sec".format(n, d, n / d)
-  }
+  val p: Payments = Payments.equal(periods) //_ andThen Payments.custom(customs)
+  val sch = findSchedule(capital, rate, start, p)
 
-  val amount = findAmount(intrst, amounts, start, capital)
   println(s"capital.: $capital")
   println(s"start...: $start")
   println(s"months..: $periods")
-  println(s"amount..: $amount")
+  //println(s"amount..: $amount")
   println("interest: " + rate * 100.0 + "%")
 
-  def fmt(inst: Installment): String = inst match {
-    case Installment(d, a, c, i, rc) =>
-      "%s:   amount: %9s   capital: %9s   interest: %9s   remaining: %9s".format(d, a, c, i, rc)
+  def fmt(inst: Payment): String = inst match {
+    case Payment(d, a, p, i, b) =>
+      "%s:   amount: %9s   principal: %9s   interest: %9s   balance: %9s".format(d, a, p, i, b)
   }
-  amount
-    .map(a => schedule(intrst, dates, amounts(a), capital).map(fmt).mkString("\n"))
-    .foreach(println)
 
-  //println(benchmark())
+  sch.map(ps => ps.map(fmt).foreach(println))
+
+  def benchmark() = {
+      val s = System.currentTimeMillis()
+      val n = 100000
+      (1 to n).par.foreach(i => findAmount(capital, rate, start, p))
+      val e = System.currentTimeMillis()
+      val d = (e - s) / 1000.0
+      "%d searches in %.3f sec -> %.4f per sec".format(n, d, n / d)
+  }
+
+  println(benchmark())
 }

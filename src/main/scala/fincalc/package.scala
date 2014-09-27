@@ -1,9 +1,6 @@
-import java.time.LocalDate
-import java.time.temporal.ChronoUnit
+import org.joda.time.{Days, LocalDate}
 
 import scala.annotation.tailrec
-import scala.collection.SeqView
-import scala.runtime.ZippedTraversable3
 
 package object fincalc {
   type Payments = ((LocalDate, Money)) => List[(LocalDate, Money)]
@@ -34,7 +31,7 @@ package object fincalc {
 
   object Payment {
     def apply(start: LocalDate, end: LocalDate, amount: Money, principal: Money, interestRate: Double): Payment = {
-      val days = ChronoUnit.DAYS.between(start, end)
+      val days = Days.daysBetween(start, end).getDays
       val interest = amount.min(principal * interestRate * days / 365.0)
       val balance = principal + interest - amount
       Payment(end, amount, principal, interest, balance)
